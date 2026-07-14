@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "maligpu",
+  "version": "${version}",
+  "name": "Mali GPU Optimization",
+  "description": "Mali TBDR (Helio G100 / G57 MC2) performance tuning for Minecraft 26.1.2, designed to coexist with VulkanMod. Async occlusion culling, particle bandwidth caps, tick budgeting. No OpenGL injection.",
+  "authors": [
+    "TheOneWhoSpeaksJanna"
+  ],
+  "contact": {
+    "sources": "https://github.com/TheOneWhoSpeaksJanna/MaliGPUOptimization",
+    "issues": "https://github.com/TheOneWhoSpeaksJanna/MaliGPUOptimization/issues"
+  },
+  "license": "LGPL-3.0-only",
+  "environment": "client",
+  "entrypoints": {
+    "main": [
+      "com.maligpu.MaliGPUMod"
+    ]
+  },
+  "mixins": [
+    "maligpu.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "26.1.2"
+  },
+  "breaks": {
+    "sodium": "*",
+    "iris": "*"
+  },
+  "custom": {
+    "maligpu:target": "Mali-G57 MC2 / MediaTek Helio G100 (Valhall, TBDR)"
+  }
+}

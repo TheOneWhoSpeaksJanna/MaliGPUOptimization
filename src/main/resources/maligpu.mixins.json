@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.maligpu",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "com.maligpu.mixin.EntityRenderDispatcherMixin",
+    "com.maligpu.mixin.ParticleEngineMixin",
+    "com.maligpu.mixin.MinecraftMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  },
+  "overwrites": []
+}
