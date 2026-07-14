@@ -1,0 +1,74 @@
+{
+  "targets": {
+    "mali_complementary_lite:bright": {
+      "scale": 0.5,
+      "use_depth": false
+    },
+    "mali_complementary_lite:blur_ping": {
+      "scale": 0.5,
+      "use_depth": false
+    },
+    "mali_complementary_lite:blur_pong": {
+      "scale": 0.5,
+      "use_depth": false
+    }
+  },
+  "passes": [
+    {
+      "id": "bloom_threshold",
+      "debug_label": "Bloom Threshold",
+      "vertex_shader": "mali_complementary_lite:post/fullscreen",
+      "fragment_shader": "mali_complementary_lite:post/bloom_threshold",
+      "inputs": [
+        {
+          "sampler_name": "SceneColor",
+          "target": "minecraft:main"
+        }
+      ],
+      "output": "mali_complementary_lite:bright"
+    },
+    {
+      "id": "bloom_blur_h",
+      "debug_label": "Bloom Blur Horizontal",
+      "vertex_shader": "mali_complementary_lite:post/fullscreen",
+      "fragment_shader": "mali_complementary_lite:post/bloom_blur_h",
+      "inputs": [
+        {
+          "sampler_name": "BloomInput",
+          "target": "mali_complementary_lite:bright"
+        }
+      ],
+      "output": "mali_complementary_lite:blur_ping"
+    },
+    {
+      "id": "bloom_blur_v",
+      "debug_label": "Bloom Blur Vertical",
+      "vertex_shader": "mali_complementary_lite:post/fullscreen",
+      "fragment_shader": "mali_complementary_lite:post/bloom_blur_v",
+      "inputs": [
+        {
+          "sampler_name": "BloomInput",
+          "target": "mali_complementary_lite:blur_ping"
+        }
+      ],
+      "output": "mali_complementary_lite:blur_pong"
+    },
+    {
+      "id": "complementary_composite",
+      "debug_label": "Complementary Grade + Bloom Composite",
+      "vertex_shader": "mali_complementary_lite:post/fullscreen",
+      "fragment_shader": "mali_complementary_lite:post/complementary_composite",
+      "inputs": [
+        {
+          "sampler_name": "SceneColor",
+          "target": "minecraft:main"
+        },
+        {
+          "sampler_name": "BloomColor",
+          "target": "mali_complementary_lite:blur_pong"
+        }
+      ],
+      "output": "minecraft:main"
+    }
+  ]
+}
