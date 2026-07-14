@@ -28,6 +28,10 @@ public final class BerylCompat {
         cfg.asyncOcclusionCulling = true;
         cfg.particleLimit = true;
         if (cfg.maxParticles > 250) cfg.maxParticles = 250;
-        MaliGPUMod.LOGGER.info("[MaliGPUOptimization] Beryl auto-tune applied: occlusion culling forced on, particle cap tightened to {}.", cfg.maxParticles);
+        cfg.capAnimations = true;
+        cfg.disableWeatherParticles = true;
+        cfg.skipFarParticles = true;
+        cfg.save();
+        MaliGPUMod.LOGGER.info("[MaliGPUOptimization] Beryl auto-tune applied: occlusion on, particle cap={}, animations/weather capped.", cfg.maxParticles);
     }
 }

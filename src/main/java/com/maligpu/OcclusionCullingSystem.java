@@ -10,22 +10,26 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.ArrayDeque;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.BitSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public enum OcclusionCullingSystem {
     INSTANCE;
 
-    private final Set<Entity> visibleEntities = new HashSet<>();
+    private final AtomicInteger visibleCount = new AtomicInteger(0);
+    private final AtomicInteger checkedCount = new AtomicInteger(0);
     private final AtomicBoolean running = new AtomicBoolean(false);
     private ScheduledExecutorService scheduler;
     private ForkJoinPool workers;
+
+    private Entity[] snapshot = new Entity[0];
+    private final BitSet visible = new BitSet();
+    private int snapshotHash;
 
     public synchronized void start() {
         if (running.get()) return;
@@ -50,9 +54,17 @@ public enum OcclusionCullingSystem {
 
     public boolean isEntityVisible(Entity e) {
         if (!MaliGPUConfig.INSTANCE.asyncOcclusionCulling) return true;
-        synchronized (visibleEntities) {
-            return visibleEntities.contains(e);
-        }
+        int id = e.getId();
+        if (id < 0 || id >= snapshot.length) return true;
+        return visible.get(id);
+    }
+
+    public int visibleCount() {
+        return visibleCount.get();
+    }
+
+    public int checkedCount() {
+        return checkedCount.get();
     }
 
     private void recompute() {
@@ -63,25 +75,35 @@ public enum OcclusionCullingSystem {
         BlockPos center = BlockPos.containing(eye);
         int extent = Math.max(8, MaliGPUConfig.INSTANCE.cullGridHalfExtent);
 
-        Set<Entity> next = new HashSet<>();
-        next.add(mc.player);
-        for (Entity e : level.entitiesForRendering()) {
-            if (e == mc.player) continue;
-            AABB box = e.getBoundingBox();
-            Vec3 target = box.getCenter();
-            if (target.distanceTo(eye) > extent) {
-                next.add(e);
-                continue;
-            }
-            if (hasLineOfSight(level, center, target, extent)) {
-                next.add(e);
-            }
+        java.util.ArrayList<Entity> list = new java.util.ArrayList<>();
+        for (Entity en : level.entitiesForRendering()) list.add(en);
+        Entity[] ents = list.toArray(new Entity[0]);
+        int localHash = 1;
+        for (Entity en : ents) localHash = 31 * localHash + en.getId();
+        if (localHash != snapshotHash || ents.length != snapshot.length) {
+            snapshot = ents;
+            snapshotHash = localHash;
+            if (visible.size() < ents.length) visible.clear();
         }
+        visible.clear();
+        visible.set(mc.player.getId());
 
-        synchronized (visibleEntities) {
-            visibleEntities.clear();
-            visibleEntities.addAll(next);
+        Vec3 finalEye = eye;
+        BlockPos finalCenter = center;
+        int total = ents.length;
+        int kept = 1;
+        for (Entity en : ents) {
+            if (en == mc.player) continue;
+            AABB box = en.getBoundingBox();
+            Vec3 target = box.getCenter();
+            if (target.distanceTo(finalEye) > extent
+                    || hasLineOfSight(level, finalCenter, target, extent)) {
+                visible.set(en.getId());
+                kept++;
+            }
         }
+        visibleCount.set(kept);
+        checkedCount.set(total);
     }
 
     private boolean hasLineOfSight(ClientLevel level, BlockPos from, Vec3 to, int extent) {

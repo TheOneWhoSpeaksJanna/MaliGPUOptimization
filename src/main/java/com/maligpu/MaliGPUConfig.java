@@ -26,6 +26,10 @@ public final class MaliGPUConfig {
 
     public boolean autoTuneForBeryl = true;
 
+    public boolean capAnimations = true;
+    public boolean disableWeatherParticles = true;
+    public boolean skipFarParticles = true;
+
     private MaliGPUConfig() {
         load();
     }
@@ -51,6 +55,9 @@ public final class MaliGPUConfig {
             aggressiveTickThrottle = bool(p, "aggressiveTickThrottle", aggressiveTickThrottle);
             tickBudgetSeconds = Double.parseDouble(p.getProperty("tickBudgetSeconds", Double.toString(tickBudgetSeconds)));
             autoTuneForBeryl = bool(p, "autoTuneForBeryl", autoTuneForBeryl);
+            capAnimations = bool(p, "capAnimations", capAnimations);
+            disableWeatherParticles = bool(p, "disableWeatherParticles", disableWeatherParticles);
+            skipFarParticles = bool(p, "skipFarParticles", skipFarParticles);
         } catch (IOException e) {
             e.printStackTrace();
         }

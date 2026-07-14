@@ -12,10 +12,14 @@ Mali TBDR GPUs (Bifrost / Valhall / Immortalis) shade only visible fragments via
 
 | Optimization | Mechanism | Report priority |
 |--------------|-----------|-----------------|
-| Async Occlusion Culling | `ForkJoinPool` line-of-sight raycasts against block occlusion on worker threads; cancels invisible entity rendering via `EntityRenderDispatcher.shouldRender`. | 1 |
+| Async Occlusion Culling | GC-free `BitSet` visibility mask, recomputed off-thread; cancels invisible entity rendering via `EntityRenderDispatcher.shouldRender`. Avoids per-frame `HashSet` allocation (the old version churned GC — see report's "minimize garbage" item). | 1 |
 | Particle Bandwidth Cap | Caps per-frame particle spawns and distance-culls particles to cut dynamic vertex uploads over the memory bus. | 4 (spirit) |
+| Animation / Weather Caps | Optional toggles to disable non-essential animations and weather particles (report: disabling animations +15–25 FPS, weather +5–10). | High (doc) |
 | Tick Budgeting | Optional client tick throttle to preserve thermal headroom under sustained load. | 6 (spirit) |
+| Beryl Auto-Tune | Detects Beryl at runtime and tightens occlusion + particle + animation caps so the shader mod shades less. | — |
 | Config file | `config/maligpu.properties` — every toggle tunable, no recompile needed. | — |
+
+> **What a Fabric mod CANNOT do.** The biggest Mali-specific wins in the deeper research doc live inside the **renderer**, not in a Java mod: shader `mediump` precision, Vulkan pipeline caches, ASTC/AFBC texture compression, draw-call instancing, descriptor-set reuse. Those are VulkanMod's C++ backend (and Beryl's shaders). This mod only does the CPU-side / data-submission layer — which is exactly the slice a companion Fabric mod is allowed to touch without breaking VulkanMod.
 
 ## Compatibility
 
