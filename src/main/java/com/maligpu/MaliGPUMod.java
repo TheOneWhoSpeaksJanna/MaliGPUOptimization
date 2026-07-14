@@ -1,6 +1,7 @@
 package com.maligpu;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +12,12 @@ public class MaliGPUMod implements ModInitializer {
     @Override
     public void onInitialize() {
         LOGGER.info("[MaliGPUOptimization] Initializing for Mali TBDR (Helio G100 / G57 MC2) on Minecraft 26.1.2");
+
+        boolean vulkanMod = FabricLoader.getInstance().isModLoaded("vulkanmod");
+        if (vulkanMod && MaliGPUConfig.INSTANCE.asyncOcclusionCulling) {
+            MaliGPUConfig.INSTANCE.asyncOcclusionCulling = false;
+            LOGGER.info("[MaliGPUOptimization] VulkanMod detected - forcing asyncOcclusionCulling off (entity hook is not on the Vulkan render path; leaving it on would waste a background thread).");
+        }
 
         String beryl = BerylCompat.detectModId();
         if (beryl != null) {
