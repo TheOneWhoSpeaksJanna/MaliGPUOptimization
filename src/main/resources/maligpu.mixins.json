@@ -2,9 +2,10 @@
   "required": true,
   "minVersion": "0.8",
   "compatibilityLevel": "JAVA_25",
+  "package": "com.maligpu.mixin",
   "mixins": [
-    "com.maligpu.mixin.EntityRenderDispatcherMixin",
-    "com.maligpu.mixin.ParticleEngineMixin",
-    "com.maligpu.mixin.MinecraftMixin"
+    "EntityRenderDispatcherMixin",
+    "ParticleEngineMixin",
+    "MinecraftMixin"
   ]
 }
