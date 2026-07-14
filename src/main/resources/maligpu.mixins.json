@@ -7,9 +7,5 @@
     "com.maligpu.mixin.EntityRenderDispatcherMixin",
     "com.maligpu.mixin.ParticleEngineMixin",
     "com.maligpu.mixin.MinecraftMixin"
-  ],
-  "injectors": {
-    "defaultRequire": 0
-  },
-  "overwrites": []
+  ]
 }
