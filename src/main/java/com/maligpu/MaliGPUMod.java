@@ -36,5 +36,7 @@ public class MaliGPUMod implements ModInitializer {
         } else {
             LOGGER.info("[MaliGPUOptimization] Occlusion culling disabled - safe under VulkanMod; using particle cap + tick throttle only.");
         }
+
+        MaliWorldGenCommand.register();
     }
 }
