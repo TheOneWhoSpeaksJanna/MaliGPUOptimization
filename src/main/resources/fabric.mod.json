@@ -28,10 +28,6 @@
   "recommends": {
     "beryl": "*"
   },
-  "breaks": {
-    "sodium": "*",
-    "iris": "*"
-  },
   "custom": {
     "maligpu:target": "Mali-G57 MC2 / MediaTek Helio G100 (Valhall, TBDR)"
   }
