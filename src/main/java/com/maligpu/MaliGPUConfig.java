@@ -24,6 +24,8 @@ public final class MaliGPUConfig {
     public boolean aggressiveTickThrottle = false;
     public double tickBudgetSeconds = 0.008;
 
+    public boolean autoTuneForBeryl = true;
+
     private MaliGPUConfig() {
         load();
     }
@@ -48,6 +50,7 @@ public final class MaliGPUConfig {
             particleCullRadius = Double.parseDouble(p.getProperty("particleCullRadius", Double.toString(particleCullRadius)));
             aggressiveTickThrottle = bool(p, "aggressiveTickThrottle", aggressiveTickThrottle);
             tickBudgetSeconds = Double.parseDouble(p.getProperty("tickBudgetSeconds", Double.toString(tickBudgetSeconds)));
+            autoTuneForBeryl = bool(p, "autoTuneForBeryl", autoTuneForBeryl);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -69,6 +72,7 @@ public final class MaliGPUConfig {
             p.setProperty("particleCullRadius", Double.toString(particleCullRadius));
             p.setProperty("aggressiveTickThrottle", Boolean.toString(aggressiveTickThrottle));
             p.setProperty("tickBudgetSeconds", Double.toString(tickBudgetSeconds));
+            p.setProperty("autoTuneForBeryl", Boolean.toString(autoTuneForBeryl));
             try (var w = Files.newBufferedWriter(FILE, StandardCharsets.UTF_8)) {
                 p.store(w, "MaliGPUOptimization config - Mali GPU (Helio G100 / G57 MC2) tuning for Minecraft 26.1.2");
             }

@@ -1,0 +1,36 @@
+# Build and publish a GitHub Release with the mod jar whenever a tag like v1.0.0 is pushed.
+
+name: release
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+      - name: build
+        run: ./gradlew build --no-daemon
+      - name: create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes "Automated build of MaliGPUOptimization ${GITHUB_REF_NAME} for Minecraft 26.1.2 (Fabric, VulkanMod-compatible, Beryl-aware)." \
+            build/libs/MaliGPUOptimization-*.jar

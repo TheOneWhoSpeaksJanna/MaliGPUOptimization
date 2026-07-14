@@ -4,7 +4,8 @@ out/
 
 # Gradle
 .gradle/
-gradle/wrapper/gradle-wrapper.jar
+# gradle-wrapper.jar is committed on purpose so CI can build without a local Gradle install
+!gradle/wrapper/gradle-wrapper.jar
 !gradle/wrapper/gradle-wrapper.properties
 
 # IDE
