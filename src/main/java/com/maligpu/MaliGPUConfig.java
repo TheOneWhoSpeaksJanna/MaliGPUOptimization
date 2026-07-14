@@ -11,7 +11,10 @@ public final class MaliGPUConfig {
 
     public static final MaliGPUConfig INSTANCE = new MaliGPUConfig();
 
-    public boolean asyncOcclusionCulling = true;
+    // NOTE: under VulkanMod (Vulkan renderer) the entity-render hook this system fed is replaced,
+    // so occlusion culling is a passive profiler only. Off by default on Vulkan to avoid a
+    // useless background thread. Re-enable only on the OpenGL/Krypton path where the hook applies.
+    public boolean asyncOcclusionCulling = false;
     public int cullGridHalfExtent = 64;
     public int cullWorkerThreads = 2;
     public int cullRecomputeIntervalMs = 250;

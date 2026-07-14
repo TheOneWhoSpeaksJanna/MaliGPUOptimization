@@ -18,7 +18,7 @@ public class MaliGPUMod implements ModInitializer {
             BerylCompat.applyAutoTune();
         }
 
-        LOGGER.info("[MaliGPUOptimization] asyncOcclusionCulling={} particleLimit={} aggressiveTickThrottle={} autoTuneForBeryl={}",
+        LOGGER.info("[MaliGPUOptimization] asyncOcclusionCulling={} (off under VulkanMod - entity hook not on Vulkan path) particleLimit={} aggressiveTickThrottle={} autoTuneForBeryl={}",
                 MaliGPUConfig.INSTANCE.asyncOcclusionCulling,
                 MaliGPUConfig.INSTANCE.particleLimit,
                 MaliGPUConfig.INSTANCE.aggressiveTickThrottle,
@@ -26,6 +26,8 @@ public class MaliGPUMod implements ModInitializer {
 
         if (MaliGPUConfig.INSTANCE.asyncOcclusionCulling) {
             OcclusionCullingSystem.INSTANCE.start();
+        } else {
+            LOGGER.info("[MaliGPUOptimization] Occlusion culling disabled - safe under VulkanMod; using particle cap + tick throttle only.");
         }
     }
 }
