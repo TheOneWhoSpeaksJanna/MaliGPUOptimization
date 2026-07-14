@@ -36,18 +36,25 @@ public final class MaliWorldGenCommand {
     private static int done = 0;
     private static long startTimeMs = 0;
     private static boolean running = false;
+    private static String doneMessage = "Pre-generation complete";
 
     public static void register() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(Commands.literal("mali-load-world")
                 .requires(src -> src.getPlayer() != null)
                 .then(Commands.argument("chunks", IntegerArgumentType.integer(1, 200000))
-                    .executes(ctx -> execute(ctx, IntegerArgumentType.getInteger(ctx, "chunks"))))));
+                    .executes(ctx -> startGen(ctx, IntegerArgumentType.getInteger(ctx, "chunks"), "normal play"))));
+
+            dispatcher.register(Commands.literal("mali-dh-gen")
+                .requires(src -> src.getPlayer() != null)
+                .then(Commands.argument("chunks", IntegerArgumentType.integer(1, 200000))
+                    .executes(ctx -> startGen(ctx, IntegerArgumentType.getInteger(ctx, "chunks"), "Distant Horizons LODs"))));
+        });
 
         ServerTickEvents.START_SERVER_TICK.register(server -> tick());
     }
 
-    private static int execute(CommandContext<CommandSourceStack> ctx, int count) {
+    private static int startGen(CommandContext<CommandSourceStack> ctx, int count, String purpose) {
         CommandSourceStack src = ctx.getSource();
         ServerPlayer p = src.getPlayer();
         if (p == null) {
@@ -78,12 +85,13 @@ public final class MaliWorldGenCommand {
         player = p;
         startTimeMs = System.currentTimeMillis();
         running = true;
+        doneMessage = "Pre-generation complete (" + purpose + ")";
 
         bar = new ServerBossEvent(UUID.randomUUID(), Component.literal("[MaliGPUOptimization] Starting..."), BossEvent.BossBarColor.GREEN, BossEvent.BossBarOverlay.PROGRESS);
         bar.setProgress(0.0f);
         bar.addPlayer(p);
 
-        src.sendSuccess(() -> Component.literal("[MaliGPUOptimization] Queued " + total + " chunks for fast pre-generation around you. Green bar shows progress + ETA."), false);
+        src.sendSuccess(() -> Component.literal("[MaliGPUOptimization] Queued " + total + " chunks for " + purpose + ". Green bar shows progress + ETA. Distant Horizons reads these generated chunks to build its LODs."), false);
         return 1;
     }
 
@@ -133,7 +141,7 @@ public final class MaliWorldGenCommand {
                 bar.removeAllPlayers();
             }
             if (feedback != null) {
-                feedback.sendSuccess(() -> Component.literal("[MaliGPUOptimization] Pre-generation complete: " + done + "/" + total + " chunks generated and saved."), false);
+                feedback.sendSuccess(() -> Component.literal("[MaliGPUOptimization] " + doneMessage + ": " + done + "/" + total + " chunks generated and saved."), false);
             }
             total = 0;
             done = 0;
