@@ -101,6 +101,12 @@ public final class MaliWorldGenCommand {
             done = 0;
             level = null;
             feedback = null;
+        } else if (done > 0 && done % 500 == 0) {
+            // Lightweight progress ping every 500 chunks so the user can see it working.
+            final int d = done, t = total;
+            if (feedback != null) {
+                feedback.sendSuccess(() -> Component.literal("[MaliGPUOptimization] Pre-generating... " + d + "/" + t + " chunks done."), false);
+            }
         }
     }
 }
