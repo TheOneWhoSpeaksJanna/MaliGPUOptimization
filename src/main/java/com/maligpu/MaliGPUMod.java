@@ -41,12 +41,19 @@ public class MaliGPUMod implements ModInitializer {
 
         MaliWorldGenCommand.register();
 
-        // v1.2.1 gap-fillers (engine-side, Vulkan-safe). Per-frame Dynamic FPS lives in
-        // MinecraftClientTickMixin; disconnect leak cleanup in MinecraftDisconnectMixin.
-        MaliGPUMod.LOGGER.info("[MaliGPUOptimization] features: dynamicFps={} liftAudioSoundCap={} patchMemoryLeaks={} worldGenTickBudgetMs={}",
+        // v1.3.0: apply-at-boot + debug instrumentation. Boot mixin applies engine tunables at
+        // Minecraft constructor; debug system instruments the whole game when enabled.
+        MaliGPUMod.LOGGER.info("[MaliGPUOptimization] v1.3.0 features: dynamicFps={} liftAudioSoundCap={} patchMemoryLeaks={} applyAtBoot={} debugLogging={} worldGenTickBudgetMs={} reloadDebounceMs={}",
                 MaliGPUConfig.INSTANCE.dynamicFps,
                 MaliGPUConfig.INSTANCE.liftAudioSoundCap,
                 MaliGPUConfig.INSTANCE.patchMemoryLeaks,
-                MaliGPUConfig.INSTANCE.worldGenTickBudgetMs);
+                MaliGPUConfig.INSTANCE.applyAtBoot,
+                MaliGPUConfig.INSTANCE.debugLogging,
+                MaliGPUConfig.INSTANCE.worldGenTickBudgetMs,
+                MaliGPUConfig.INSTANCE.reloadDebounceMs);
+
+        if (MaliGPUConfig.INSTANCE.debugLogging) {
+            MaliDebug.feature("startup", "debug logging enabled - whole-MC instrumentation active (reload timing, GC pauses, sound rate, chunk delta)");
+        }
     }
 }

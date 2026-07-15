@@ -1,5 +1,6 @@
 package com.maligpu.mixin;
 
+import com.maligpu.MaliDebug;
 import com.maligpu.MaliGPUConfig;
 import net.minecraft.client.sounds.SoundEngine;
 import net.minecraft.client.sounds.SoundEngine.PlayResult;
@@ -43,6 +44,10 @@ public class SoundEngineMixin {
             lastTickStamp = now;
         }
         startedThisTick++;
+
+        if (MaliGPUConfig.INSTANCE.debugLogging) {
+            MaliDebug.soundPlayed();
+        }
 
         // Allow through if under budget. If over budget, cancel this one-shot to protect the
         // audio thread. Looping/ticking sounds (music, ambient) are rare and low-count, so we

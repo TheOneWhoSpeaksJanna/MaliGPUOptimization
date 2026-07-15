@@ -8,6 +8,9 @@
     "MinecraftMixin",
     "SoundEngineMixin",
     "MinecraftDisconnectMixin",
-    "MinecraftClientTickMixin"
+    "MinecraftClientTickMixin",
+    "MinecraftBootMixin",
+    "TextureManagerMixin",
+    "MinecraftClientSamplerMixin"
   ]
 }

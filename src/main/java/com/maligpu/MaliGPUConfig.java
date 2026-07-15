@@ -12,9 +12,6 @@ public final class MaliGPUConfig {
     public static final MaliGPUConfig INSTANCE = new MaliGPUConfig();
 
     // === Legacy Mali-GPU tuning (kept from 1.1.x) ===
-    // NOTE: under VulkanMod (Vulkan renderer) the entity-render hook this system fed is replaced,
-    // so occlusion culling is a passive profiler only. Off by default on Vulkan to avoid a
-    // useless background thread. Re-enable only on the OpenGL/Krypton path where the hook applies.
     public boolean asyncOcclusionCulling = false;
     public int cullGridHalfExtent = 64;
     public int cullWorkerThreads = 2;
@@ -34,29 +31,37 @@ public final class MaliGPUConfig {
     public boolean disableWeatherParticles = true;
     public boolean skipFarParticles = true;
 
-    // === v1.2.0+: gap-fillers the rest of the modpack does not cover (Vulkan-safe) ===
+    // === v1.2.0+: gap-fillers (Vulkan-safe, engine-side) ===
+    public boolean liftAudioSoundCap = true;   // throttle new one-shot sounds/tick (audio-thread stall fix)
+    public boolean dynamicFps = true;          // throttle FPS when unfocused/hidden
+    public int dynamicFpsUnfocused = 1;
+    public int dynamicFpsInvisible = 0;
+    public boolean patchMemoryLeaks = true;    // force-release level/sound resources on disconnect
 
-    // Audio engine: throttle new one-shot sounds per tick so the OpenAL mixer thread never
-    // stalls under heavy sound load (rain + many entities). Engine-side, Vulkan-safe.
-    public boolean liftAudioSoundCap = true;
-
-    // Dynamic FPS: when the game window is unfocused / hidden, throttle the client to a near-idle
-    // frame rate so background CPU/GPU/battery are conserved. FPSDisplay only READS fps; nothing
-    // in the pack actually throttles it.
-    public boolean dynamicFps = true;
-    public int dynamicFpsUnfocused = 1;   // fps cap applied while not focused
-    public int dynamicFpsInvisible = 0;   // fps cap applied while window hidden (0 = pause render)
-
-    // Vanilla memory-leak cleanup (Debugify-style safe subset): on world disconnect, force-release
-    // the level renderer's GPU/upload buffers + the live sound set. Over many connect/disconnect
-    // cycles this holds heap + native memory the GC cannot reclaim promptly (extended-session
-    // creep). Does not overlap with FerriteCore. Engine-side, Vulkan-safe.
-    public boolean patchMemoryLeaks = true;
-
-    // World-gen time budget per server tick (ms). Keeps /mali-load-world from spiralling the
-    // integrated loopback server (the "Can't keep up!" death spiral on Mali SoCs). Lower = more
-    // responsive game during pre-gen, but slower overall generation. 4ms..50ms sane range.
+    // === v1.2.1: world-gen time budget ===
+    // Caps /mali-load-world generation to N ms per server tick so the integrated loopback server
+    // never spirals ("Can't keep up!"). Lower = more responsive while pre-genning.
     public long worldGenTickBudgetMs = 12L;
+
+    // === v1.3.0: debug instrumentation + boot/cache ===
+    // Deep debug logs. When true, the mod logs WHOLE-MINECRAFT instrumentation (resource reload
+    // timing, GC pauses, sound spawn rate, loaded-chunk delta) at INFO, plus per-feature stats.
+    // Off by default to keep the log clean; turn on to see what MC does right/wrong.
+    public boolean debugLogging = false;
+
+    // Apply all engine-tunables at game boot (Minecraft constructor) instead of waiting for the
+    // first client tick. This is the "make changes at start" request; also writes a one-time
+    // device calibration cache so the first-start cost is paid once, not every launch.
+    public boolean applyAtBoot = true;
+
+    // Resource-reload debounce (ms): when Minecraft fires a reload, wait this long and apply the
+    // setup ONCE. Prevents the repeated full cache-clear + 16-atlas rebuild storm seen in logs
+    // ("29877 caches cleared" x3). This is the caching we can own without touching VulkanMod.
+    public long reloadDebounceMs = 1500L;
+
+    // Count atlas rebuilds and log a warning when a reload triggers excessive rebuilds (sign of a
+    // misbehaving resource pack or an unnecessary reload). Visibility-only; does not block reloads.
+    public boolean trackAtlasRebuilds = true;
 
     private MaliGPUConfig() {
         load();
@@ -93,6 +98,11 @@ public final class MaliGPUConfig {
             dynamicFpsInvisible = intv(p, "dynamicFpsInvisible", dynamicFpsInvisible);
             patchMemoryLeaks = bool(p, "patchMemoryLeaks", patchMemoryLeaks);
             worldGenTickBudgetMs = longv(p, "worldGenTickBudgetMs", worldGenTickBudgetMs);
+
+            debugLogging = bool(p, "debugLogging", debugLogging);
+            applyAtBoot = bool(p, "applyAtBoot", applyAtBoot);
+            reloadDebounceMs = longv(p, "reloadDebounceMs", reloadDebounceMs);
+            trackAtlasRebuilds = bool(p, "trackAtlasRebuilds", trackAtlasRebuilds);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -125,6 +135,11 @@ public final class MaliGPUConfig {
             p.setProperty("dynamicFpsInvisible", Integer.toString(dynamicFpsInvisible));
             p.setProperty("patchMemoryLeaks", Boolean.toString(patchMemoryLeaks));
             p.setProperty("worldGenTickBudgetMs", Long.toString(worldGenTickBudgetMs));
+
+            p.setProperty("debugLogging", Boolean.toString(debugLogging));
+            p.setProperty("applyAtBoot", Boolean.toString(applyAtBoot));
+            p.setProperty("reloadDebounceMs", Long.toString(reloadDebounceMs));
+            p.setProperty("trackAtlasRebuilds", Boolean.toString(trackAtlasRebuilds));
 
             try (var w = Files.newBufferedWriter(FILE, StandardCharsets.UTF_8)) {
                 p.store(w, "MaliGPUOptimization config - Mali GPU (Helio G100 / G57 MC2) tuning for Minecraft 26.1.2");
