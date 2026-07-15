@@ -11,6 +11,7 @@ public final class MaliGPUConfig {
 
     public static final MaliGPUConfig INSTANCE = new MaliGPUConfig();
 
+    // === Legacy Mali-GPU tuning (kept from 1.1.x) ===
     // NOTE: under VulkanMod (Vulkan renderer) the entity-render hook this system fed is replaced,
     // so occlusion culling is a passive profiler only. Off by default on Vulkan to avoid a
     // useless background thread. Re-enable only on the OpenGL/Krypton path where the hook applies.
@@ -32,6 +33,38 @@ public final class MaliGPUConfig {
     public boolean capAnimations = true;
     public boolean disableWeatherParticles = true;
     public boolean skipFarParticles = true;
+
+    // === v1.2.0: All-in-one gaps the rest of the modpack does not cover ===
+
+    // Audio engine: remove the vanilla 247-simultaneous-sound hard cap that stalls the
+    // OpenAL audio thread under heavy sound load (e.g. rain + many entities). Engine-side,
+    // Vulkan-safe.
+    public boolean liftAudioSoundCap = true;
+
+    // Dynamic FPS: when the game window is unfocused / not visible, throttle the client to a
+    // near-idle frame rate so background CPU/GPU/battery are conserved. FPSDisplay only READS
+    // fps; nothing in the pack actually throttles it.
+    public boolean dynamicFps = true;
+    public int dynamicFpsUnfocused = 1;   // fps cap applied while not focused
+    public int dynamicFpsInvisible = 0;   // fps cap applied while window hidden (0 = pause render)
+
+    // Adaptive distance scaling: sample average client FPS and step render/simulation distance
+    // down when fps is too low, restore when there is headroom. No mod in the pack does this
+    // dynamically (all distances are static).
+    public boolean adaptiveDistance = true;
+    public double adaptiveFloorFps = 28.0;     // drop a distance step below this average
+    public double adaptiveCeilFps = 50.0;      // restore a distance step above this average
+    public int adaptiveMinDistance = 4;        // never go below this (render & sim)
+    public int adaptiveSampleSeconds = 5;      // averaging window
+
+    // Graphics auto-preset applied on first run (then user may override in settings).
+    public boolean graphicsAutoPreset = true;
+    public boolean graphicsPresetApplied = false; // internal flag, becomes true after first apply
+
+    // Vanilla memory-leak patches (Debugify-style safe subset). These target known vanilla
+    // resource leaks; they do not overlap with FerriteCore (which optimizes data structures,
+    // not leaks). New in 1.2.0.
+    public boolean patchMemoryLeaks = true;
 
     private MaliGPUConfig() {
         load();
@@ -61,6 +94,19 @@ public final class MaliGPUConfig {
             capAnimations = bool(p, "capAnimations", capAnimations);
             disableWeatherParticles = bool(p, "disableWeatherParticles", disableWeatherParticles);
             skipFarParticles = bool(p, "skipFarParticles", skipFarParticles);
+
+            liftAudioSoundCap = bool(p, "liftAudioSoundCap", liftAudioSoundCap);
+            dynamicFps = bool(p, "dynamicFps", dynamicFps);
+            dynamicFpsUnfocused = intv(p, "dynamicFpsUnfocused", dynamicFpsUnfocused);
+            dynamicFpsInvisible = intv(p, "dynamicFpsInvisible", dynamicFpsInvisible);
+            adaptiveDistance = bool(p, "adaptiveDistance", adaptiveDistance);
+            adaptiveFloorFps = Double.parseDouble(p.getProperty("adaptiveFloorFps", Double.toString(adaptiveFloorFps)));
+            adaptiveCeilFps = Double.parseDouble(p.getProperty("adaptiveCeilFps", Double.toString(adaptiveCeilFps)));
+            adaptiveMinDistance = intv(p, "adaptiveMinDistance", adaptiveMinDistance);
+            adaptiveSampleSeconds = intv(p, "adaptiveSampleSeconds", adaptiveSampleSeconds);
+            graphicsAutoPreset = bool(p, "graphicsAutoPreset", graphicsAutoPreset);
+            graphicsPresetApplied = bool(p, "graphicsPresetApplied", graphicsPresetApplied);
+            patchMemoryLeaks = bool(p, "patchMemoryLeaks", patchMemoryLeaks);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -83,6 +129,23 @@ public final class MaliGPUConfig {
             p.setProperty("aggressiveTickThrottle", Boolean.toString(aggressiveTickThrottle));
             p.setProperty("tickBudgetSeconds", Double.toString(tickBudgetSeconds));
             p.setProperty("autoTuneForBeryl", Boolean.toString(autoTuneForBeryl));
+            p.setProperty("capAnimations", Boolean.toString(capAnimations));
+            p.setProperty("disableWeatherParticles", Boolean.toString(disableWeatherParticles));
+            p.setProperty("skipFarParticles", Boolean.toString(skipFarParticles));
+
+            p.setProperty("liftAudioSoundCap", Boolean.toString(liftAudioSoundCap));
+            p.setProperty("dynamicFps", Boolean.toString(dynamicFps));
+            p.setProperty("dynamicFpsUnfocused", Integer.toString(dynamicFpsUnfocused));
+            p.setProperty("dynamicFpsInvisible", Integer.toString(dynamicFpsInvisible));
+            p.setProperty("adaptiveDistance", Boolean.toString(adaptiveDistance));
+            p.setProperty("adaptiveFloorFps", Double.toString(adaptiveFloorFps));
+            p.setProperty("adaptiveCeilFps", Double.toString(adaptiveCeilFps));
+            p.setProperty("adaptiveMinDistance", Integer.toString(adaptiveMinDistance));
+            p.setProperty("adaptiveSampleSeconds", Integer.toString(adaptiveSampleSeconds));
+            p.setProperty("graphicsAutoPreset", Boolean.toString(graphicsAutoPreset));
+            p.setProperty("graphicsPresetApplied", Boolean.toString(graphicsPresetApplied));
+            p.setProperty("patchMemoryLeaks", Boolean.toString(patchMemoryLeaks));
+
             try (var w = Files.newBufferedWriter(FILE, StandardCharsets.UTF_8)) {
                 p.store(w, "MaliGPUOptimization config - Mali GPU (Helio G100 / G57 MC2) tuning for Minecraft 26.1.2");
             }

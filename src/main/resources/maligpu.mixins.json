@@ -5,6 +5,9 @@
   "package": "com.maligpu.mixin",
   "mixins": [
     "ParticleEngineMixin",
-    "MinecraftMixin"
+    "MinecraftMixin",
+    "SoundEngineMixin",
+    "MinecraftDisconnectMixin",
+    "MinecraftClientTickMixin"
   ]
 }
