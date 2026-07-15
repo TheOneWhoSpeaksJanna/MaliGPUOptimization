@@ -6,7 +6,8 @@ import com.maligpu.MaliGPUMod;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -47,10 +48,10 @@ public class MinecraftBootMixin {
 
         // Register the resource-reload profiler (whole-MC instrumentation).
         try {
-            ResourceManagerHelper.getInstance().registerReloadListener(
+            ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
                 new SimpleSynchronousResourceReloadListener() {
-                    private final ResourceLocation id = ResourceLocation.fromNamespaceAndPath("maligpu", "reload_profiler");
-                    @Override public ResourceLocation getFabricId() { return id; }
+                    private final Identifier id = Identifier.fromNamespaceAndPath("maligpu", "reload_profiler");
+                    @Override public Identifier getFabricId() { return id; }
                     @Override public void onResourceManagerReload(ResourceManager manager) {
                         if (MaliGPUConfig.INSTANCE.debugLogging) {
                             MaliDebug.reloadEnd();
@@ -58,8 +59,6 @@ public class MinecraftBootMixin {
                     }
                 });
             if (MaliGPUConfig.INSTANCE.debugLogging) {
-                // We can't hook the start of every reload cheaply here; the client tick sampler logs
-                // reload counts via TextureManager instrumentation (see TextureManagerMixin).
                 MaliGPUMod.LOGGER.info("[MaliGPUOptimization/DEBUG] resource-reload profiler registered.");
             }
         } catch (Throwable t) {

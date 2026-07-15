@@ -31,7 +31,12 @@ repositories {
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	implementation "net.fabricmc:fabric-api:fabric-api:${project.fabric_api_version}"
+	// Use split Fabric API submodules instead of the fat 'fabric-api' aggregator. The aggregator
+	// remap is broken in this Loom 1.17.14 sandbox; the submodules remap fine (proven by VulkanMod-src).
+	implementation "net.fabricmc.fabric-api:fabric-resource-loader-v0:3.3.22+4fc5413f25"
+	implementation "net.fabricmc.fabric-api:fabric-resource-loader-v1:2.0.10+7c44c7324c"
+	implementation "net.fabricmc.fabric-api:fabric-command-api-v2:3.0.5+e2bdee784c"
+	implementation "net.fabricmc.fabric-api:fabric-lifecycle-events-v1:4.1.1+df84eb3d4c"
 }
 
 processResources {
