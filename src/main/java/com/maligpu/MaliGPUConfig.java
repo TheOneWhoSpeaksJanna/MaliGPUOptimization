@@ -34,37 +34,29 @@ public final class MaliGPUConfig {
     public boolean disableWeatherParticles = true;
     public boolean skipFarParticles = true;
 
-    // === v1.2.0: All-in-one gaps the rest of the modpack does not cover ===
+    // === v1.2.0+: gap-fillers the rest of the modpack does not cover (Vulkan-safe) ===
 
-    // Audio engine: remove the vanilla 247-simultaneous-sound hard cap that stalls the
-    // OpenAL audio thread under heavy sound load (e.g. rain + many entities). Engine-side,
-    // Vulkan-safe.
+    // Audio engine: throttle new one-shot sounds per tick so the OpenAL mixer thread never
+    // stalls under heavy sound load (rain + many entities). Engine-side, Vulkan-safe.
     public boolean liftAudioSoundCap = true;
 
-    // Dynamic FPS: when the game window is unfocused / not visible, throttle the client to a
-    // near-idle frame rate so background CPU/GPU/battery are conserved. FPSDisplay only READS
-    // fps; nothing in the pack actually throttles it.
+    // Dynamic FPS: when the game window is unfocused / hidden, throttle the client to a near-idle
+    // frame rate so background CPU/GPU/battery are conserved. FPSDisplay only READS fps; nothing
+    // in the pack actually throttles it.
     public boolean dynamicFps = true;
     public int dynamicFpsUnfocused = 1;   // fps cap applied while not focused
     public int dynamicFpsInvisible = 0;   // fps cap applied while window hidden (0 = pause render)
 
-    // Adaptive distance scaling: sample average client FPS and step render/simulation distance
-    // down when fps is too low, restore when there is headroom. No mod in the pack does this
-    // dynamically (all distances are static).
-    public boolean adaptiveDistance = true;
-    public double adaptiveFloorFps = 28.0;     // drop a distance step below this average
-    public double adaptiveCeilFps = 50.0;      // restore a distance step above this average
-    public int adaptiveMinDistance = 4;        // never go below this (render & sim)
-    public int adaptiveSampleSeconds = 5;      // averaging window
-
-    // Graphics auto-preset applied on first run (then user may override in settings).
-    public boolean graphicsAutoPreset = true;
-    public boolean graphicsPresetApplied = false; // internal flag, becomes true after first apply
-
-    // Vanilla memory-leak patches (Debugify-style safe subset). These target known vanilla
-    // resource leaks; they do not overlap with FerriteCore (which optimizes data structures,
-    // not leaks). New in 1.2.0.
+    // Vanilla memory-leak cleanup (Debugify-style safe subset): on world disconnect, force-release
+    // the level renderer's GPU/upload buffers + the live sound set. Over many connect/disconnect
+    // cycles this holds heap + native memory the GC cannot reclaim promptly (extended-session
+    // creep). Does not overlap with FerriteCore. Engine-side, Vulkan-safe.
     public boolean patchMemoryLeaks = true;
+
+    // World-gen time budget per server tick (ms). Keeps /mali-load-world from spiralling the
+    // integrated loopback server (the "Can't keep up!" death spiral on Mali SoCs). Lower = more
+    // responsive game during pre-gen, but slower overall generation. 4ms..50ms sane range.
+    public long worldGenTickBudgetMs = 12L;
 
     private MaliGPUConfig() {
         load();
@@ -99,14 +91,8 @@ public final class MaliGPUConfig {
             dynamicFps = bool(p, "dynamicFps", dynamicFps);
             dynamicFpsUnfocused = intv(p, "dynamicFpsUnfocused", dynamicFpsUnfocused);
             dynamicFpsInvisible = intv(p, "dynamicFpsInvisible", dynamicFpsInvisible);
-            adaptiveDistance = bool(p, "adaptiveDistance", adaptiveDistance);
-            adaptiveFloorFps = Double.parseDouble(p.getProperty("adaptiveFloorFps", Double.toString(adaptiveFloorFps)));
-            adaptiveCeilFps = Double.parseDouble(p.getProperty("adaptiveCeilFps", Double.toString(adaptiveCeilFps)));
-            adaptiveMinDistance = intv(p, "adaptiveMinDistance", adaptiveMinDistance);
-            adaptiveSampleSeconds = intv(p, "adaptiveSampleSeconds", adaptiveSampleSeconds);
-            graphicsAutoPreset = bool(p, "graphicsAutoPreset", graphicsAutoPreset);
-            graphicsPresetApplied = bool(p, "graphicsPresetApplied", graphicsPresetApplied);
             patchMemoryLeaks = bool(p, "patchMemoryLeaks", patchMemoryLeaks);
+            worldGenTickBudgetMs = longv(p, "worldGenTickBudgetMs", worldGenTickBudgetMs);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -137,14 +123,8 @@ public final class MaliGPUConfig {
             p.setProperty("dynamicFps", Boolean.toString(dynamicFps));
             p.setProperty("dynamicFpsUnfocused", Integer.toString(dynamicFpsUnfocused));
             p.setProperty("dynamicFpsInvisible", Integer.toString(dynamicFpsInvisible));
-            p.setProperty("adaptiveDistance", Boolean.toString(adaptiveDistance));
-            p.setProperty("adaptiveFloorFps", Double.toString(adaptiveFloorFps));
-            p.setProperty("adaptiveCeilFps", Double.toString(adaptiveCeilFps));
-            p.setProperty("adaptiveMinDistance", Integer.toString(adaptiveMinDistance));
-            p.setProperty("adaptiveSampleSeconds", Integer.toString(adaptiveSampleSeconds));
-            p.setProperty("graphicsAutoPreset", Boolean.toString(graphicsAutoPreset));
-            p.setProperty("graphicsPresetApplied", Boolean.toString(graphicsPresetApplied));
             p.setProperty("patchMemoryLeaks", Boolean.toString(patchMemoryLeaks));
+            p.setProperty("worldGenTickBudgetMs", Long.toString(worldGenTickBudgetMs));
 
             try (var w = Files.newBufferedWriter(FILE, StandardCharsets.UTF_8)) {
                 p.store(w, "MaliGPUOptimization config - Mali GPU (Helio G100 / G57 MC2) tuning for Minecraft 26.1.2");
@@ -161,6 +141,14 @@ public final class MaliGPUConfig {
     private static int intv(Properties p, String k, int d) {
         try {
             return Integer.parseInt(p.getProperty(k, Integer.toString(d)));
+        } catch (NumberFormatException e) {
+            return d;
+        }
+    }
+
+    private static long longv(Properties p, String k, long d) {
+        try {
+            return Long.parseLong(p.getProperty(k, Long.toString(d)));
         } catch (NumberFormatException e) {
             return d;
         }

@@ -23,9 +23,15 @@ import java.util.Queue;
 import java.util.UUID;
 
 public final class MaliWorldGenCommand {
-    // How many full chunks to force-generate per server tick.
-    // Higher = faster world-gen but bigger per-tick hitch. Tune to taste.
-    private static final int BATCH = 32;
+    // Time-budgeted world generation.
+    //
+    // The old version generated a fixed BATCH of chunks per server tick, which on a Mali SoC could
+    // take >200ms/tick and spiral the integrated loopback server ("Can't keep up! ... 4000+ ticks
+    // behind"), freezing the game. Instead we budget by TIME: each tick we generate chunks until a
+    // soft wall (default 12ms) is hit, then stop and let the server tick finish normally. This keeps
+    // the game responsive (server TPS stays ~20) while pre-gen still makes steady progress in the
+    // background. The wall is configurable in maligpu.properties (worldGenTickBudgetMs).
+    private static final long TICK_BUDGET_MS = MaliGPUConfig.INSTANCE.worldGenTickBudgetMs;
 
     private static final Queue<ChunkPos> queue = new ArrayDeque<>();
     private static ServerLevel level;
@@ -83,7 +89,7 @@ public final class MaliWorldGenCommand {
         bar.setProgress(0.0f);
         bar.addPlayer(p);
 
-        src.sendSuccess(() -> Component.literal("[MaliGPUOptimization] Queued " + total + " chunks for fast pre-generation around you. Green bar shows progress + ETA."), false);
+        src.sendSuccess(() -> Component.literal("[MaliGPUOptimization] Queued " + total + " chunks for time-budgeted pre-generation (no server lag). Green bar = progress + ETA."), false);
         return 1;
     }
 
@@ -99,16 +105,24 @@ public final class MaliWorldGenCommand {
     private static void tick() {
         if (!running || queue.isEmpty()) return;
 
-        int n = Math.min(BATCH, queue.size());
-        for (int i = 0; i < n; i++) {
-            ChunkPos p = queue.poll();
-            if (p == null) break;
+        long budget = Math.max(4L, MaliGPUConfig.INSTANCE.worldGenTickBudgetMs);
+        long start = System.nanoTime();
+        long limitNs = budget * 1_000_000L;
+
+        int generated = 0;
+        while (!queue.isEmpty()) {
+            ChunkPos cp = queue.peek();
             try {
-                level.getChunkSource().getChunk(p.x(), p.z(), ChunkStatus.FULL, true);
+                level.getChunkSource().getChunk(cp.x(), cp.z(), ChunkStatus.FULL, true);
                 done++;
+                generated++;
             } catch (Exception ignored) {
                 done++;
             }
+            queue.poll();
+
+            // Stop this tick once we hit the time budget so the server tick can finish on time.
+            if ((System.nanoTime() - start) >= limitNs) break;
         }
 
         float progress = total > 0 ? (float) done / (float) total : 1.0f;
@@ -122,7 +136,7 @@ public final class MaliWorldGenCommand {
         int pct = (int) (progress * 100);
         if (bar != null) {
             bar.setProgress(progress);
-            bar.setName(Component.literal("[MaliGPUOptimization] " + pct + "%  " + done + "/" + total + "  ETA " + eta));
+            bar.setName(Component.literal("[MaliGPUOptimization] " + pct + "%  " + done + "/" + total + "  ETA " + eta + "  (+" + generated + "/tick)"));
         }
 
         if (queue.isEmpty()) {
@@ -133,7 +147,7 @@ public final class MaliWorldGenCommand {
                 bar.removeAllPlayers();
             }
             if (feedback != null) {
-                feedback.sendSuccess(() -> Component.literal("[MaliGPUOptimization] Pre-generation complete: " + done + "/" + total + " chunks generated and saved."), false);
+                feedback.sendSuccess(() -> Component.literal("[MaliGPUOptimization] Pre-generation complete: " + done + "/" + total + " chunks generated (time-budgeted, server stayed responsive)."), false);
             }
             total = 0;
             done = 0;

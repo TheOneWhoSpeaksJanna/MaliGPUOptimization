@@ -41,13 +41,12 @@ public class MaliGPUMod implements ModInitializer {
 
         MaliWorldGenCommand.register();
 
-        // v1.2.0 all-in-one gap-fillers (engine-side, Vulkan-safe). The per-frame logic lives in
-        // MinecraftClientTickMixin; here we just log the active feature set.
-        MaliGPUMod.LOGGER.info("[MaliGPUOptimization] all-in-one features: liftAudioSoundCap={} dynamicFps={} adaptiveDistance={} graphicsAutoPreset={} patchMemoryLeaks={}",
-                MaliGPUConfig.INSTANCE.liftAudioSoundCap,
+        // v1.2.1 gap-fillers (engine-side, Vulkan-safe). Per-frame Dynamic FPS lives in
+        // MinecraftClientTickMixin; disconnect leak cleanup in MinecraftDisconnectMixin.
+        MaliGPUMod.LOGGER.info("[MaliGPUOptimization] features: dynamicFps={} liftAudioSoundCap={} patchMemoryLeaks={} worldGenTickBudgetMs={}",
                 MaliGPUConfig.INSTANCE.dynamicFps,
-                MaliGPUConfig.INSTANCE.adaptiveDistance,
-                MaliGPUConfig.INSTANCE.graphicsAutoPreset,
-                MaliGPUConfig.INSTANCE.patchMemoryLeaks);
+                MaliGPUConfig.INSTANCE.liftAudioSoundCap,
+                MaliGPUConfig.INSTANCE.patchMemoryLeaks,
+                MaliGPUConfig.INSTANCE.worldGenTickBudgetMs);
     }
 }

@@ -3,7 +3,7 @@
   "id": "maligpu",
   "version": "${version}",
   "name": "Mali GPU Optimization",
-  "description": "All-in-one Mali TBDR (Helio G100 / G57 MC2) performance tuning for Minecraft 26.1.2. Fills the gaps other mods don't: dynamic FPS, adaptive render/sim distance, audio-thread sound throttle, graphics auto-preset, and disconnect resource-leak cleanup. VulkanMod-safe: engine-side only, no GL/Vulkan render-path hooks.",
+  "description": "Mali TBDR (Helio G100 / G57 MC2) performance tuning for Minecraft 26.1.2. v1.2.1: removed adaptive-distance + graphics-auto-preset (user sets own video settings). Keeps Dynamic FPS, audio sound-throttle, disconnect resource-leak cleanup, and time-budgeted /mali-load-world pre-gen (no server death-spiral). VulkanMod-safe: engine-side only.",
   "authors": [
     "TheOneWhoSpeaksJanna"
   ],
